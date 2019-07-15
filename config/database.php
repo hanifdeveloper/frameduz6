@@ -15,7 +15,7 @@ return array(
         'host' => 'localhost',
         'port' => 3306,
         'user' => 'root',
-        'password' => 'root',
+        'password' => '',
         'dbname' => 'dbweb_sample',
         'charset' => 'utf8',
         'collate' => 'utf8_general_ci',
