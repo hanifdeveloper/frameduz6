@@ -13,6 +13,9 @@ if(!empty($output)){
     $cmd = exec($query, $response, $status);
     $result = ($status === 0) ? 'Database berhasil diinstall' : 'Database gagal diinstall';
     output($result);
+    system('find ../upload -type d -exec chmod 770 {} \;');
+    system('find ../upload -type d -exec chmod g+s {} \;');
+    system('find ../upload -type f -exec chmod 660 {} \; 2>&1 | grep -v "Operation not permitted"');
     info();
 }else{
     output('mysql not installed');
