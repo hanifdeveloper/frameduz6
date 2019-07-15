@@ -1,0 +1,19 @@
+{
+    "name": "hanifmuhammad/frameduz-v6",
+    "description": "easy and very use",
+    "license": "GPL",
+    "authors": [
+        {
+            "name": "Hanif Muhammad",
+            "email": "hanif.softdev@gmail.com",
+            "homepage": "http://hanifdeveloper.github.io/"
+        }
+    ],
+    "minimum-stability": "stable",
+    "scripts": {
+        "start": "php -S localhost:8000"
+    },
+    "require": {
+        
+    }
+}
