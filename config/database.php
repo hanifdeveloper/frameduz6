@@ -7,7 +7,7 @@ return array(
      * =======================
      * Install database sample via terminal
      * cd assests/
-     * php install.php
+     * sudo php install.php
      * 
      */
     'crud' => array(
