@@ -82,7 +82,7 @@ class Controller{
 
 		extract($data, EXTR_SKIP);
 		$viewPath = APP . $PathController . '/view/' . $Controller . '/' . $fileView . '.' . $Controller . '.php';
-		require_once TEMPLATE . $template . 'index.php';
+		require_once TEMPLATE . $template . 'template.php';
 		unset($data, $template);
 	}
 	
