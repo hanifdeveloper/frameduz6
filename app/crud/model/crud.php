@@ -64,7 +64,7 @@ class crud extends Model{
 		$result['table'] = $dataValue['value'];
 		$result['label'] = 'user';
 		$result['query'] = $dataValue['query'];
-		// $result['query'] = '';
+		$result['query'] = '';
         return $result;
     }
 
