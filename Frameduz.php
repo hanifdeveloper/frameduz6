@@ -18,7 +18,7 @@ class frameduzPHP{
 		session_start();
 		$this->logs = $logs;
 		spl_autoload_register(array($this, 'loader'));
-		$this->disableMagicQuotes();
+		// $this->disableMagicQuotes(); // is Deprecated PHP 7.4
 		if(isset($_GET['fileAccess'])){
 			$PathController = 'app\\defaults\\controller\\';
     		$ctrl = $PathController . 'main';
