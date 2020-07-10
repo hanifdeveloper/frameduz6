@@ -30,7 +30,7 @@ class custom extends application{
 	}
 
 	protected function template($id){
-		if(in_array($id, array('tabel', 'form'))){
+		if(in_array($id, array('table', 'form'))){
 			$this->subView($id, $this->data);
 		}
 	}

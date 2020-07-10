@@ -36,7 +36,7 @@
                     </form>
                 </div>
                 <div class="table-content">
-                    <?php $this->template('tabel'); ?>
+                    <?php $this->template('table'); ?>
                 </div>
                 <div class="card-body">
                     <div class="query" style="font-size:10pt;"></div>

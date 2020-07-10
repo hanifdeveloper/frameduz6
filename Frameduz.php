@@ -65,7 +65,10 @@ class frameduzPHP{
 
     private function showError($type){
         if($this->runAjax()){
-	        $errorMsg = array('status' => 'failed', 'data' => 'Missing Parameter or '.$type.' not founds');
+			$errorMsg = array('status' => 'error', 'message' => array(
+				'title' => 'Oops',
+				'text' => 'Missing Parameter or method not found',
+			));
     		$this->showResponse($errorMsg, 404);
     	}else{
     		$PathController = 'app\\defaults\\controller\\';

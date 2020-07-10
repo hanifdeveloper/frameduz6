@@ -10,6 +10,7 @@
 <main role="main">
     <div class="container">
         <div class="py-5">
+            <div class="err_message"></div>
             <div id="crud-project" class="card">
                 <div class="card-header bg-light">
                     <form class="frmData" onsubmit="return false;" autocomplete="off">
@@ -34,11 +35,11 @@
                         <?= comp\BOOTSTRAP::inputKey('page', '1'); ?>
                     </form>
                 </div>
+                <div class="table-content"></div>
                 <div class="card-body">
                     <div class="text-center">
                         <div class="spinner-border table-loader" role="status"><span class="sr-only">Loading...</span></div>
                     </div>
-                    <div class="table-content"></div>
                 </div>
             </div>
         </div>

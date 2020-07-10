@@ -4,7 +4,7 @@
             <div class="modal-header">
                 <h4 class="modal-title form-modal-title"></h4>
             </div>
-            <form class="frmInput form-horizontal" onsubmit="return false;" autocomplete="off">
+            <form class="frmInput" onsubmit="return false;" autocomplete="off">
                 <div class="modal-body">
                     <div class="form-modal-content" style="padding: 10px;"></div>
                 </div>
