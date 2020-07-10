@@ -162,7 +162,7 @@ class Controller{
 	protected function post($validation = false, $key = false, $filterType = false){
 		if($validation === true){
 			if(isset($_SESSION[$this->session])){
-				if(!$key) return filter_var_array($_POST, FILTER_SANITIZE_ADD_SLASHES);       
+				if(!$key) return filter_var_array($_POST, FILTER_SANITIZE_MAGIC_QUOTES);       
 				if($filterType) return filter_input(INPUT_POST, $key, $filterType);
 				else return $_POST[$key];
 			}
@@ -171,7 +171,7 @@ class Controller{
 			}
 		}
 		else{
-			if(!$key) return filter_var_array($_POST, FILTER_SANITIZE_ADD_SLASHES);       
+			if(!$key) return filter_var_array($_POST, FILTER_SANITIZE_MAGIC_QUOTES);       
 			if($filterType) return filter_input(INPUT_POST, $key, $filterType);
 			else return $_POST[$key];
 		}
