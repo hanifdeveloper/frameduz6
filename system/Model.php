@@ -25,6 +25,13 @@ class Model{
 		$this->project = $this->getUrl->ProjectName;
 		$this->session = $this->getUrl->mainConfig['project'][$this->project]['session'];
 		$this->cookie = $this->getUrl->mainConfig['project'][$this->project]['cookie'];
+		$this->errorMsg = array(
+			'status' => 'error', 
+			'message' => array(
+				'title' => 'Oops', 
+				'text' => '', 
+			),
+		);
 		$setting = $this->getUrl->mainConfig['setting'];
 		if(!empty($setting)){
 			foreach($setting as $set => $value) $this->{$set} = $value;
@@ -38,6 +45,11 @@ class Model{
 	protected function setDefaultValue($val = array()){
 		$this->defaultValue = $val;
 	}
+
+	public function paramsFilter($params, $input) {
+		foreach ($params as $key => $value) { if(isset($input[$key])) $params[$key] = $input[$key]; }
+		return $params;
+	}
 	
 	private function openConnection(){
 		if(isset($this->databaseConfig[$this->con]) && !empty($this->databaseConfig[$this->con])){
@@ -48,18 +60,18 @@ class Model{
 			$opt[PDO::ATTR_PERSISTENT] = $this->databaseConfig[$this->con]['persistent'];
 			try{$this->db = new PDO($dsn, $this->databaseConfig[$this->con]['user'], $this->databaseConfig[$this->con]['password'], $opt);}
 			catch(PDOexception $err){
-				header("HTTP/1.1 200");
+				header("HTTP/1.1 503");
 		        header("Content-Type:application/json");
-		        $errorMsg = array('status' => 'failed', 'data' => $err->getMessage());
-		        // $errorMsg = array('status' => 'failed', 'data' => $this->databaseConfig[$this->con]['errorMsg']);
-		        echo json_encode($errorMsg);
+				$this->errorMsg['message']['text'] = $err->getMessage();
+				// $this->errorMsg['text'] = $this->databaseConfig[$this->con]['errorMsg'];
+		        echo json_encode($this->errorMsg);
 				die;
 			}
 		}else{
-			header("HTTP/1.1 200");
+			header("HTTP/1.1 503");
 	        header("Content-Type:application/json");
-	        $errorMsg = array('status' => 'Error', 'data' => 'Maaf, '.$this->con.' belum dikonfigurasikan silahkan check di file config/database.php');
-	        echo json_encode($errorMsg);
+			$this->errorMsg['message']['text'] = $this->con.' belum dikonfigurasikan silahkan check di file config/database.php';
+		    echo json_encode($this->errorMsg);
 			die;
 		}
 	}
@@ -92,32 +104,8 @@ class Model{
 		return $sql_string;
 	}
 
-	public function checkConnection(){
-		$this->openConnection();
-	}
-
-	public function getDataTabel($tabel, $id = array()){
-		set_time_limit(0);
-		if(!empty($id)){
-			$data = $this->getData('SELECT * FROM '.$tabel.' WHERE ('.$id[0].' = ?) ', array($id[1]));
-			if($data['count'] > 0) $result =  $data['value'][0];
-			else $result = $this->getTabel($tabel);
-		}
-		else
-			$result = $this->getTabel($tabel);
-		return $result;
-	}
-	
-	public function getTabel($tabel){
-		$result = $this->getData('SHOW COLUMNS FROM '.$tabel);
-		$defaultValue = $this->defaultValue;
-		$dataTabel = array();
-		foreach($result['value'] as $kol){$dataTabel[$kol['Field']] = '';}
-		foreach($dataTabel as $key => $value){if(isset($defaultValue[$key])) $dataTabel[$key] = $defaultValue[$key];}
-		return $dataTabel;
-    }
-	
 	public function getData($query, $arrData = array()){
+		set_time_limit(0);
 		if(is_null($this->db)) $this->openConnection();
 		$sql_stat = $this->db->prepare($query);
 		$sql_stat->execute($arrData);
@@ -131,77 +119,71 @@ class Model{
 			'query' => $sql_query.';',
 		);
 	}
+
+	public function getTabel($tabel){
+		set_time_limit(0);
+		$result = $this->getData('SHOW COLUMNS FROM '.$tabel);
+		$defaultValue = $this->defaultValue;
+		$dataTabel = array();
+		foreach($result['value'] as $kol){$dataTabel[$kol['Field']] = '';}
+		foreach($dataTabel as $key => $value){if(isset($defaultValue[$key])) $dataTabel[$key] = $defaultValue[$key];}
+		return $dataTabel;
+    }
+
+	public function getDataTabel($tabel, $id = array()){
+		if(!empty($id)){
+			$data = $this->getData('SELECT * FROM '.$tabel.' WHERE ('.$id[0].' = ?) ', array($id[1]));
+			if($data['count'] > 0) $result =  $data['value'][0];
+			else $result = $this->getTabel($tabel);
+		}
+		else
+			$result = $this->getTabel($tabel);
+		return $result;
+	}
+	
+	public function getOrderNumber($tabel){
+        $dataTabel = $this->getData('SELECT COUNT(*) AS jumlah FROM '.$tabel);
+        if($dataTabel['count'] > 0){
+            $order = intval($dataTabel['value'][0]['jumlah'])+1;
+        }else{
+            $order = 1;
+        }
+        return $order;
+    }
 	
 	public function save($tabel, $arrData){
 		if(is_null($this->db)) $this->openConnection();
 		foreach($arrData as $key => $value) $keys[] = ':' . $key;
 		$valTable = implode(', ',$keys);
 		$query = 'INSERT INTO ' . $tabel . ' VALUES (' . $valTable . ')';
-		$error = 0;
+		$success = 0;
 		$message = '';
 		try{
 			$sql_stat = $this->db->prepare($query);
-			$error = $sql_stat->execute($arrData);
+			$success = $sql_stat->execute($arrData);
 			$message = $sql_stat->errorInfo();
 		}
 		catch(Exception $err){}
 		$this->closeConnection();
 		$sql_query = $this->sql_debug($query, $arrData);
 		return array(
-			'error' => $error,
-			'message' => $message[2],
-			'query' => $sql_query.';',
-		);
-	}
-	
-	public function save_update($tabel, $arrData){
-		if(is_null($this->db)) $this->openConnection();
-		$col = array();
-		$val = array();
-		$dup = array();
-		$data = array();
-		foreach($arrData as $key => $value){
-			array_push($col, $key);
-			array_push($val, '?');
-			array_push($data, $value);
-			array_push($dup, $key.'=VALUES('.$key.')');
-		}
-		$colTable = '('.implode(',', $col).')';
-		$valTable = '('.implode(',', $val).')';
-		$dupTable = implode(',', $dup);	
-		$query = 'INSERT INTO ' . $tabel . ' ' . $colTable . ' VALUES ' . $valTable . ' ON DUPLICATE KEY UPDATE '. $dupTable;
-		$error = 0;
-		$message = '';
-		try{
-			$this->db->beginTransaction();
-			$sql_stat = $this->db->prepare($query);
-			$error = $sql_stat->execute($data);
-			$message = $sql_stat->errorInfo();
-			$this->db->commit();
-		}
-		catch(Exception $err){
-			$this->db->rollback();
-		}
-		$this->closeConnection();
-		$sql_query = $this->sql_debug($query, $data);
-		return array(
-			'error' => $error,
+			'success' => $success,
 			'message' => $message[2],
 			'query' => $sql_query.';',
 		);
 	}
 
-	public function save_update_($tabel, $arrData){
+	public function save_update($tabel, $arrData){
 		if(is_null($this->db)) $this->openConnection();
 		foreach($arrData as $key => $value) $keys[] = $key . '= :' . $key;
 		$valTable = implode(', ',$keys);
 		$query = 'INSERT INTO ' . $tabel . ' SET ' . $valTable . ' ON DUPLICATE KEY UPDATE ' . $valTable;
-		$error = 0;
+		$success = 0;
 		$message = '';
 		try{
 			$this->db->beginTransaction();
 			$sql_stat = $this->db->prepare($query);
-			$error = $sql_stat->execute($arrData);
+			$success = $sql_stat->execute($arrData);
 			$message = $sql_stat->errorInfo();
 			$this->db->commit();
 		}
@@ -211,100 +193,7 @@ class Model{
 		$this->closeConnection();
 		$sql_query = $this->sql_debug($query, $arrData);
 		return array(
-			'error' => $error,
-			'message' => $message[2],
-			'query' => $sql_query.';',
-		);
-	}
-
-	public function save_update_all($tabel, $rowData){
-		/**
-		 * show variables like 'max_allowed_packet';
-		 * SET GLOBAL max_allowed_packet=524288000; //500mb
-		 * max_rows=5000000000;
-		 * 
-		 * Output : Multi Values statement
-		 * 
-		*/
-
-
-		if(is_null($this->db)) $this->openConnection();
-		$rows = count($rowData);
-		$col = array();
-		$val = array();
-		$dup = array();
-		$arrData = array();
-		foreach($rowData[0] as $key => $value){
-			array_push($col, $key);
-			array_push($val, '?');
-			array_push($dup, $key.'=VALUES('.$key.')');
-		}
-		foreach($rowData as $key => $value){
-			array_walk_recursive($value, function($item) use (&$arrData) { $arrData[] = $item; });
-		}
-		$colTable = '('.implode(',', $col).')';
-		$valTable = '('.implode(',', $val).'),';
-		$valTable = rtrim(str_repeat($valTable, $rows), ',');
-		$dupTable = implode(',', $dup);	
-		$query = 'INSERT INTO ' . $tabel . ' ' . $colTable . ' VALUES ' . $valTable . ' ON DUPLICATE KEY UPDATE '. $dupTable;
-		$error = 0;
-		$message = '';
-		try{
-			$sql_stat = $this->db->prepare($query);
-			$error = $sql_stat->execute($arrData);
-			$message = $sql_stat->errorInfo();
-		}
-		catch(Exception $err){}
-		$this->closeConnection();
-		$sql_query = $this->sql_debug($query, $arrData);
-		return array(
-			'error' => $error,
-			'message' => $message[2],
-			'query' => $sql_query.';',
-		);
-	}
-
-	public function save_update_all_($tabel, $rowData){
-		/**
-		 * show variables like 'max_allowed_packet';
-		 * SET GLOBAL max_allowed_packet=524288000; //500mb
-		 * max_rows=5000000000;
-		 * 
-		 * Output : Multi Insert statement
-		 * 
-		*/
-
-		if(is_null($this->db)) $this->openConnection();
-		$rows = count($rowData);
-		$col = array();
-		$val = array();
-		$dup = array();
-		$arrData = array();
-		foreach($rowData[0] as $key => $value){
-			array_push($col, $key);
-			array_push($val, '?');
-			array_push($dup, $key.'=VALUES('.$key.')');
-		}
-		foreach($rowData as $key => $value){
-			array_walk_recursive($value, function($item) use (&$arrData) { $arrData[] = $item; });
-		}
-		$colTable = '('.implode(',', $col).')';
-		$valTable = '('.implode(',', $val).')';
-		$dupTable = implode(',', $dup);	
-		$query = 'INSERT INTO ' . $tabel . ' ' . $colTable . ' VALUES ' . $valTable . ' ON DUPLICATE KEY UPDATE '. $dupTable.';';
-		$query = rtrim(str_repeat($query, $rows), ';');
-		$error = 0;
-		$message = '';
-		try{
-			$sql_stat = $this->db->prepare($query);
-			$error = $sql_stat->execute($arrData);
-			$message = $sql_stat->errorInfo();
-		}
-		catch(Exception $err){}
-		$this->closeConnection();
-		$sql_query = $this->sql_debug($query, $arrData);
-		return array(
-			'error' => $error,
+			'success' => $success,
 			'message' => $message[2],
 			'query' => $sql_query.';',
 		);
@@ -317,18 +206,18 @@ class Model{
 		foreach($idKey as $key => $value) $keys2[] = '(' . $key . '= :' . $key .')';
 		$keyTable = implode(' AND ',$keys2);
 		$query = 'UPDATE ' . $tabel . ' SET ' . $valTable . ' WHERE ' . $keyTable;
-		$error = 0;
+		$success = 0;
 		$message = '';
 		try{
 			$sql_stat = $this->db->prepare($query);
-			$error = $sql_stat->execute(array_merge($arrData, $idKey));
+			$success = $sql_stat->execute(array_merge($arrData, $idKey));
 			$message = $sql_stat->errorInfo();
 		}
 		catch(Exception $err){}
 		$this->closeConnection();
 		$sql_query = $this->sql_debug($query, array_merge($arrData, $idKey));
 		return array(
-			'error' => $error,
+			'success' => $success,
 			'message' => $message[2],
 			'query' => $sql_query.';',
 		);
@@ -339,18 +228,18 @@ class Model{
 		foreach($idKey as $key => $value) $keys[] = '(' . $key . '= :' . $key .')';
 		$keyTable = implode(' AND ',$keys);
 		$query = 'DELETE FROM ' . $tabel . ' WHERE ' . $keyTable;
-		$error = 0;
+		$success = 0;
 		$message = '';
 		try{
 			$sql_stat = $this->db->prepare($query);
-			$error = $sql_stat->execute($idKey);
+			$success = $sql_stat->execute($idKey);
 			$message = $sql_stat->errorInfo();
 		}
 		catch(Exception $err){}
 		$this->closeConnection();
 		$sql_query = $this->sql_debug($query, $idKey);
 		return array(
-			'error' => $error,
+			'success' => $success,
 			'message' => $message[2],
 			'query' => $sql_query.';',
 		);
@@ -372,25 +261,5 @@ class Model{
 		if(isset($_SESSION[$this->session])) unset($_SESSION[$this->session]);
 	}
 	
-	public function dropDB()
-	{
-		if(is_null($this->db)) $this->openConnection();
-		$query = 'DROP database dbweb_simpeg';
-		$error = 0;
-		$message = '';
-		try{
-			$sql_stat = $this->db->prepare($query);
-			$error = $sql_stat->execute($query);
-			$message = $sql_stat->errorInfo();
-		}
-		catch(Exception $err){}
-		$this->closeConnection();
-		$sql_query = $this->sql_debug($query);
-		return array(
-			'error' => $error,
-			'message' => $message[2],
-			'query' => $sql_query.';',
-		);
-	}
 }
 ?>

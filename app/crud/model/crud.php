@@ -43,26 +43,28 @@ class crud extends Model{
 		$page = $data['page'];
 		$cari = '%'.$data['cari'].'%';
 		$jenis = '%'.$data['jenis'].'%';
-		$q_value = 'SELECT * FROM tb_user WHERE (nama_user LIKE ?) AND (jenis_kelamin LIKE ?) ORDER BY id_user ASC';
-		$q_count = 'SELECT COUNT(*) AS jumlah FROM tb_user WHERE (nama_user LIKE ?) AND (jenis_kelamin LIKE ?)';
+		$query = 'FROM tb_user WHERE (nama_user LIKE ?) AND (jenis_kelamin LIKE ?)';
+		$q_value = 'SELECT * '.$query.' ORDER BY id_user ASC';
+		$q_count = 'SELECT COUNT(*) AS counts '.$query;
 		$idKey = array($cari, $jenis);
-		$batas = 10;
-        $posisi = ($page - 1) * $batas;
-		$dataArr = $this->getData($q_value.' LIMIT '.$posisi.','.$batas, $idKey);
+		$limit = 10;
+        $cursor = ($page - 1) * $limit;
+		$dataValue = $this->getData($q_value.' LIMIT '.$cursor.','.$limit, $idKey);
 		$dataCount = $this->getData($q_count, $idKey);
 		$pilihan_jenis_kelamin = $this->getJenisKelamin();
-		foreach ($dataArr['value'] as $key => $value) {
+		foreach ($dataValue['value'] as $key => $value) {
 			$foto_user = (!empty($value['foto_user']) && file_exists('upload/image/'.$value['foto_user'])) ? $this->getUrl->baseUrl . 'upload/image/'.$value['foto_user'] : $this->no_image;
-			$dataArr['value'][$key]['foto_user'] = $foto_user;
-			$dataArr['value'][$key]['jenis_kelamin'] = $pilihan_jenis_kelamin[$value['jenis_kelamin']]['text'];
+			$dataValue['value'][$key]['foto_user'] = $foto_user;
+			$dataValue['value'][$key]['jenis_kelamin'] = $pilihan_jenis_kelamin[$value['jenis_kelamin']]['text'];
 		}
-        $result['no'] = $posisi + 1;
+        $result['no'] = $cursor + 1;
         $result['page'] = $page;
-        $result['batas'] = $batas;
-        $result['jumlah'] = $dataCount['value'][0]['jumlah'];
-        $result['tabel'] = $dataArr['value'];
-		$result['query'] = $dataArr['query'];
-		$result['query'] = '';
+        $result['limit'] = $limit;
+        $result['count'] = $dataCount['value'][0]['counts'];
+		$result['table'] = $dataValue['value'];
+		$result['label'] = 'user';
+		$result['query'] = $dataValue['query'];
+		// $result['query'] = '';
         return $result;
     }
 

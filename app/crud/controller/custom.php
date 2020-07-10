@@ -9,41 +9,29 @@ class custom extends application{
 	
 	public function __construct(){
 		parent::__construct();
-		$this->api_path = $this->link('api/v1');
-		$this->url_path = $this->link($this->getProject().$this->getController());
 		$this->crud = new crud();
+		$this->id_ref = 'id_user';
+		$this->table_ref = 'tb_user';
+		$this->data['api_path'] = $this->link('api/v1');
+		$this->data['url_path'] = $this->link($this->getProject().$this->getController());
 	}
 
 	protected function index(){
-		$data['api_path'] = $this->api_path;
-		$data['url_path'] = $this->url_path;
-		$data['pilihan_jenis_kelamin'] = array('' => array('text' => 'Semua')) + $this->crud->getJenisKelamin();
-		$data['header']['page_title'] = 'Custom CRUD';
-		$data['header']['description'] = 'Contoh penggunaan frameduz membuat aplikasi CRUD versi API';
-		$data['header']['background'] = 'bg-primary';
-		$this->showView('index', $data, 'defaults');
+		$this->data['pilihan_jenis_kelamin'] = array('' => array('text' => 'Semua')) + $this->crud->getJenisKelamin();
+		$this->data['header']['page_title'] = 'Custom CRUD';
+		$this->data['header']['description'] = 'Contoh penggunaan frameduz membuat aplikasi CRUD versi API';
+		$this->data['header']['background'] = 'bg-primary';
+		$this->showView('index', $this->data, 'defaults');
 	}
 
 	protected function script(){
 		header('Content-Type: application/javascript');
-		$data['api_path'] = $this->api_path;
-		$this->subView('script', $data);
+		$this->subView('script', $this->data);
 	}
 
 	protected function template($id){
-		$data['url_path'] = $this->url_path;
-		switch ($id) {
-			case 'tabel':
-				$this->subView('tabel', $data);
-				break;
-
-			case 'form':
-				$this->subView('form', $data);
-				break;
-			
-			default:
-				# code...
-				break;
+		if(in_array($id, array('tabel', 'form'))){
+			$this->subView($id, $this->data);
 		}
 	}
 
@@ -51,12 +39,13 @@ class custom extends application{
 	 * Untuk function yang diakses via api, validasi input post diset false (karena beda session)
 	 * Dan jenis function dibuat akses public
 	 */
-	public function tabel(){
+	public function table(){
 		$input = $this->post(false);
 		if($input){
 			$data = $this->crud->getTabelUser($input);
-			$error_msg = array('status' => 'success', 'data' => $data);
-			$this->showResponse($error_msg);
+			$this->errorCode = 200;
+			$this->errorMsg = array('status' => 'success', 'data' => $data);
+			$this->showResponse($this->errorMsg, $this->errorCode);
 		}
 	}
 
@@ -64,41 +53,64 @@ class custom extends application{
 		$input = $this->post(false);
 		if($input){
 			$data = $this->crud->getFormUser($input['id']);
-			$error_msg = array('status' => 'success', 'data' => $data);
-			$this->showResponse($error_msg);
+			$this->errorCode = 200;
+			$this->errorMsg = array('status' => 'success', 'data' => $data);
+			$this->showResponse($this->errorMsg, $this->errorCode);
 		}
 	}
 
-	public function simpan(){
+	public function save(){
 		$input = $this->post(false);
 		if($input){
+			$data = $this->crud->getDataTabel($this->table_ref, array($this->id_ref, $input[$this->id_ref]));
+			$data = $this->crud->paramsFilter($data, $input);
 			$upload = $this->uploadImage('foto', 'foto');
-			if($upload['status'] == 'success'){
-				$data = $this->crud->getDataTabel('tb_user', array('id_user', $_POST['id_user']));
-				// Check Input Post
-				foreach($data as $key => $value){if(isset($input[$key])) $data[$key] = $input[$key];}
-				// Check Upload File
-				if(!empty($upload['UploadFile'])) $data['foto_user'] = $upload['UploadFile'];
-				// Check Input Array (Checkbox)
-				if(is_array($data['hobby_user'])){
-					$data['hobby_user'] = (count($data['hobby_user']) > 1) ? implode(',', $data['hobby_user']) : $data['hobby_user'][0];
-				}
-				$result = $this->crud->save_update('tb_user', $data);
-				$error_msg = ($result['error']) ? array('status' => 'success', 'message' => 'Data User telah disimpan') : array('status' => 'error', 'message' => $result['message']);
-			}else{
-				$error_msg = array('status' => 'error', 'message' => $upload['errorMsg']);
+			
+			// Check error upload
+			if($upload['status'] != 'success'){
+				$this->errorMsg['message']['text'] =  $upload['errorMsg'];
+				$this->showResponse($this->errorMsg, $this->errorCode);
+				die;
+			}
+			// Check Upload File
+			if(!empty($upload['UploadFile'])) $data['foto_user'] = $upload['UploadFile'];
+			// Check Input Array (Checkbox)
+			if(is_array($data['hobby_user'])){
+				$data['hobby_user'] = (count($data['hobby_user']) > 1) ? implode(',', $data['hobby_user']) : $data['hobby_user'][0];
 			}
 
-			$this->showResponse($error_msg);
+			$result = $this->crud->save_update($this->table_ref, $data);
+			$this->errorCode = 200;
+			$this->errorMsg = ($result['success']) ? 
+				array('status' => 'success', 'message' => array(
+					'title' => 'Sukses',
+					'text' => 'Data User telah disimpan',
+				)) : 
+				array('status' => 'error', 'message' => array(
+					'title' => 'Maaf',
+					'text' => $result['message'],
+				)); 
+
+			$this->showResponse($this->errorMsg, $this->errorCode);
 		}
 	}
 
-	public function hapus(){
+	public function delete(){
 		$input = $this->post(false);
 		if($input){
-			$result = $this->crud->delete('tb_user', array('id_user' => $input['id']));
-			$error_msg = ($result['error']) ? array('status' => 'success', 'message' => 'Data User telah dihapus') : array('status' => 'error', 'message' => $result['message']);
-			$this->showResponse($error_msg);
+			$result = $this->crud->delete($this->table_ref, array($this->id_ref => $input['id']));
+			$this->errorCode = 200;
+			$this->errorMsg = ($result['success']) ? 
+				array('status' => 'success', 'message' => array(
+					'title' => 'Sukses',
+					'text' => 'Data User telah dihapus',
+				)) : 
+				array('status' => 'error', 'message' => array(
+					'title' => 'Maaf',
+					'text' => $result['message'],
+				));
+
+			$this->showResponse($this->errorMsg, $this->errorCode);
 		}
 	}	
 }

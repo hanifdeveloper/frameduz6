@@ -1,4 +1,3 @@
-<div class="query"></div>
 <div class="table-responsive">
 	<table class="table table-default table-hover">
 		<thead>
@@ -9,7 +8,7 @@
 				<th>Jenis Kelamin</th>
 				<th>Alamat</th>
 				<th>Hobby</th>
-				<th width="150px"></th>
+				<th width="150px">Total : <span class="count">0</span></th>
 			</tr>
 		</thead>
 		<tbody>
@@ -28,8 +27,10 @@
 		</tbody>
 	</table>
 </div>
-<div class="table-pagging" style="border-top: 1px solid #ccc; padding-top: 10px;">
-	<ul class="pagination">
-		<li class="pagging page-item" number-page="" style="cursor: pointer;"><span class="page-link">{page}</span></li>
-	</ul>
+<div class="card-body">
+	<div class="table-pagging" style="border-top: 1px solid #ccc; padding-top: 10px;">
+		<ul class="pagination">
+			<li class="pagging page-item" number-page="" style="cursor: pointer;"><span class="page-link">{page}</span></li>
+		</ul>
+	</div>
 </div>

@@ -8,27 +8,25 @@ class main extends application{
 	
 	public function __construct(){
 		parent::__construct();
-	}
-
-	protected function index(){
-		$data['title'] = 'FrameduzV6';
-		$data['project'] = array(
+		$this->data['title'] = 'FrameduzV6';
+		$this->data['project'] = array(
 			array('name' => 'Simple CRUD', 'link' => $this->link('simple')),
 			array('name' => 'Custom CRUD', 'link' => $this->link('custom')),
 		);
-		$this->showView('index', $data, 'defaults');
+	}
+
+	protected function index(){
+		$this->showView('index', $this->data, 'defaults');
 	}
 
 	protected function header($data){
-        $this->subView('header', $data);
+		$this->data += $data;
+        $this->subView('header', $this->data);
 	}
 	
 	protected function modal($id){
-		$data['title'] = '<!-- Modal -->';
-		$this->subView('modal-'.$id, $data);
+		$this->subView('modal-'.$id, $this->data);
 	}
 
-	
-	
 }
 ?>

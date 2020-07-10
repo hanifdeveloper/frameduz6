@@ -6,14 +6,19 @@ use system\Config;
 use comp\FUNC;
 
 class application extends Controller{
+
+    protected $errorCode = 404;
+    protected $errorMsg = array('status' => 'error', 'message' => array(
+		'title' => 'Oops',
+		'text' => 'Missing Parameter or method not found',
+	));
 	
 	public function __construct(){
         parent::__construct();
 	}
 
 	protected function index(){
-		$errorMsg = array('status' => 'failed', 'data' => 'Missing Parameter or method not found');
-        $this->showResponse($errorMsg, 404);
+        $this->showResponse($this->errorMsg, $this->errorCode);
 	}
     
     public function createCookie($session){

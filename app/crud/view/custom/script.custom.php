@@ -1,31 +1,6 @@
 crud = {
     init: function(){
-        project = $("#crud-project");
-        modalForm = $(".form-modal-input");
-        modul = {
-            table: {
-                action: project.find(".frmData"),
-                loader: project.find(".table-loader"),
-                content: project.find(".table-content"),
-                empty: project.find(".table-empty"),
-                query: project.find(".table-content .query"),
-                tbody: project.find(".table-content .table tbody"),
-                tbodyRows: project.find(".table-content .table tbody tr"),
-                pagging: project.find(".table-content .table-pagging ul.pagination"),
-                paggingItem: project.find(".table-content .table-pagging ul.pagination .page-item"),
-            },
-            form: {
-                modal: modalForm,
-                action: modalForm.find(".frmInput"),
-                title: modalForm.find(".form-modal-title"),
-                content: modalForm.find(".form-modal-content"),
-                loader: modalForm.find(".form-modal-loader"),
-                button: modalForm.find(".form-modal-button"),
-                objectForm: modalForm.find(".form-modal-content").clone().html(),
-            },
-        };
-        
-        crud.showTable();
+        modul = app.initModul("#crud_project");
         $(document).on("change", "#cari, #jenis", function(){
             modul.table.action.find("#page").val("1");
             crud.showTable();
@@ -35,25 +10,34 @@ crud = {
         });
         $(document).on("click", ".btn-delete", function(event){
             if(confirm("Yakin data ini akan dihapus ?")){
-                app.delete({
-                    url: "/crud/hapus",
-                    data: {id: this.id},
-                    onSuccess: function(response){
-                        // console.log(response);
-                        crud.showTable();
-                    }
-                });
+                var id = this.id
+                setTimeout(function(){
+                    app.sendData({
+                        url: "/crud/delete",
+                        data: {id: id},
+                        onSuccess: function(response){
+                            // console.log(response);
+                            $(".err_message").html(app.showErrMessage(response));
+                            crud.showTable();
+                        },
+                        onError: function(error){
+                            // console.log(error);
+                            $(".err_message").html(app.showErrMessage(error));
+                        }
+                    });
+                }, 200);
             }
         });
+        crud.showTable();
     },
     showTable: function(){
         modul.table.content.hide();
         modul.table.empty.hide();
         modul.table.loader.show();
-        app.load({
-            url: "/crud/tabel",
+        app.sendData({
+            url: "/crud/table",
             data: modul.table.action.serialize(),
-            onLoad: function(response){
+            onSuccess: function(response){
                 // console.log(response);
                 modul.table.loader.hide();
                 app.createTable({
@@ -68,15 +52,20 @@ crud = {
                         $(document).scrollTop(0);
                     }
                 });
+            },
+            onError: function(error){
+                // console.log(error);
+                modul.table.loader.hide();
+                $(".err_message").html(app.showErrMessage(error));
             }
         });
     },
     showForm: function(id){
-        app.load({
+        app.sendData({
             url: "/crud/form",
             data: {id: id},
             headers: {},
-            onLoad: function(response){
+            onSuccess: function(response){
                 var data = response.data;
                 var form = data.form;
                 var object = {
@@ -87,31 +76,39 @@ crud = {
                     alamat_user: app.createForm.textArea("alamat_user", form.alamat_user).attr("rows", 3),
                     foto_user: app.createForm.uploadImage("foto", form.foto_user, data.mimes_image, data.keterangan_upload_image),
                 };
-                modul.form.loader.hide();
-                modul.form.button.show();
-                modul.form.content.html(modul.form.objectForm);
-                $.each(object, function(key, val){ modul.form.content.find("span[data-form-object='"+key+"']").replaceWith(val); });
-                modul.form.title.html(data.form_title);
-                modul.form.content.find(".file-image").on("change", function(event){ app.imagePreview(this); });
-                modul.form.modal.modal("show");
-                modul.form.action.off();
-                modul.form.action.on("submit", function(event){
+                
+                modul.formModal.content.html(modul.formModal.objectForm);
+                $.each(object, function(key, val){ modul.formModal.content.find("span[data-form-object='"+key+"']").replaceWith(val); });
+                modul.formModal.title.html(data.form_title);
+                modul.formModal.content.find(".file-image").on("change", function(event){ app.imagePreview(this); });
+                modul.formModal.loader.hide();
+                modul.formModal.button.show();
+                modul.formModal.modal.modal("show");
+                modul.formModal.action.off();
+                modul.formModal.action.on("submit", function(event){
                     event.preventDefault();
-                    modul.form.button.hide();
-                    modul.form.loader.show();
-                    app.save({
-                        url: "/crud/simpan",
-                        data: $(modul.form.action)[0],
+                    modul.formModal.button.hide();
+                    modul.formModal.loader.show();
+                    app.sendDataMultipart({
+                        url: "/crud/save",
+                        data: $(modul.formModal.action)[0],
                         onSuccess: function(response){
                             // console.log(response);
-                            modul.form.modal.modal("hide");
+                            $(".err_message").html(app.showErrMessage(response));
+                            modul.formModal.modal.modal("hide");
                             crud.showTable();
+                        },
+                        onError: function(error){
+                            // console.log(error);
+                            $(".err_message").html(app.showErrMessage(error));
+                            modul.formModal.modal.modal("hide");
                         }
                     });
                 });
             },
-            error: function (e) {
-                //console.log(e);
+            onError: function(error){
+                // console.log(error);
+                $(".err_message").html(app.showErrMessage(error));
             }
         });
     },

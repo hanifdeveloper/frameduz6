@@ -9,6 +9,9 @@ return array(
      * cd assests/
      * sudo php install.php
      * 
+     * Tunneling Database
+     * ssh -N -L 13306:127.0.0.1:3306 root@domain.com
+     * 
      */
     'crud' => array(
         'driver' => 'mysql',
@@ -22,20 +25,6 @@ return array(
         'persistent' => false,
         'errorMsg' => 'Maaf, Gagal terhubung dengan database',
     ),
-    // 'crud' => array(
-    //     'driver' => 'mysql',
-    //     'host' => '127.0.0.1',
-    //     'port' => 13306,
-    //     'user' => 'root',
-    //     'password' => '$pegawai-db@simapp',
-    //     'dbname' => 'db_pegawai',
-    //     'charset' => 'utf8',
-    //     'collate' => 'utf8_general_ci',
-    //     'persistent' => false,
-    //     'errorMsg' => 'Maaf, Gagal terhubung dengan database',
-    //     // Tunneling
-    //     // ssh -N -L 13306:127.0.0.1:3306 root@192.168.254.124
-    // ),
 );
 /*----------------------*/
 ?>
